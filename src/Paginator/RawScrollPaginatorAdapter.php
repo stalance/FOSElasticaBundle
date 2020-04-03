@@ -12,6 +12,7 @@
 namespace FOS\ElasticaBundle\Paginator;
 
 use Elastica\Query;
+use Elastica\Response;
 use Elastica\ResultSet;
 use Elastica\Scroll;
 use Elastica\SearchableInterface;
@@ -188,6 +189,12 @@ class RawScrollPaginatorAdapter implements PaginatorAdapterInterface
         }
 
         $resultSet = $this->scroll->current();
+
+        // If there's no results for this page null is returned and the scroll id is reset.
+        // Return an empty resultSet in this case.
+        if ($resultSet === null) {
+            return new ResultSet(new Response([]), $this->query, []);
+        }
 
         $this->totalHits = $resultSet->getTotalHits();
         $this->aggregations = $resultSet->getAggregations();
