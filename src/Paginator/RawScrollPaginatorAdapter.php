@@ -188,7 +188,10 @@ class RawScrollPaginatorAdapter implements PaginatorAdapterInterface
             $this->scroll->next();
         }
 
-        $resultSet = $this->scroll->current();
+        $resultSet = null;
+        if ($this->scroll->valid()) {
+            $resultSet = $this->scroll->current();
+        }
 
         // If there's no results for this page null is returned and the scroll id is reset.
         // Return an empty resultSet in this case.
