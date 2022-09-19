@@ -14,6 +14,8 @@ namespace FOS\ElasticaBundle\Tests\Unit\Transformer;
 use Elastica\Document;
 use FOS\ElasticaBundle\Event\PostTransformEvent;
 use FOS\ElasticaBundle\Event\PreTransformEvent;
+use FOS\ElasticaBundle\Tests\Unit\Transformer\fixtures\FieldEnumInt;
+use FOS\ElasticaBundle\Tests\Unit\Transformer\fixtures\FieldEnumString;
 use FOS\ElasticaBundle\Transformer\ModelToElasticaAutoTransformer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -164,6 +166,9 @@ class CastableObject
     }
 }
 
+/**
+ * @internal
+ */
 class ModelToElasticaAutoTransformerTest extends TestCase
 {
     public function testTransformerDispatches()
@@ -179,7 +184,8 @@ class ModelToElasticaAutoTransformerTest extends TestCase
                 [
                     $this->isInstanceOf(PostTransformEvent::class),
                 ]
-            );
+            )
+        ;
 
         $transformer = $this->getTransformer($dispatcher);
         $transformer->transform(new POPO3(), []);
@@ -214,13 +220,14 @@ class ModelToElasticaAutoTransformerTest extends TestCase
     {
         $transformer = $this->getTransformer();
         $document = $transformer->transform(
-            new POPO3(), [
-                             'name' => [],
-                             'float' => [],
-                             'bool' => [],
-                             'date' => [],
-                             'falseBool' => [],
-                        ]
+            new POPO3(),
+            [
+                'name' => [],
+                'float' => [],
+                'bool' => [],
+                'date' => [],
+                'falseBool' => [],
+            ]
         );
         $data = $document->getData();
 
@@ -251,9 +258,10 @@ class ModelToElasticaAutoTransformerTest extends TestCase
 
         $this->assertSame(
             [
-                 'key1' => 'value1',
-                 'key2' => 'value2',
-            ], $data['array']
+                'key1' => 'value1',
+                'key2' => 'value2',
+            ],
+            $data['array']
         );
     }
 
@@ -267,9 +275,10 @@ class ModelToElasticaAutoTransformerTest extends TestCase
 
         $this->assertSame(
             [
-                 'key1' => 'value1',
-                 'key2' => ['value2', false, 123, 8.9, $expectedDate->format('c')],
-            ], $data['multiArray']
+                'key1' => 'value1',
+                'key2' => ['value2', false, 123, 8.9, $expectedDate->format('c')],
+            ],
+            $data['multiArray']
         );
     }
 
@@ -306,7 +315,8 @@ class ModelToElasticaAutoTransformerTest extends TestCase
         $data = $document->getData();
 
         $this->assertSame(
-            \base64_encode(\file_get_contents(__DIR__.'/fixtures/attachment.odt')), $data['fileContents']
+            \base64_encode(\file_get_contents(__DIR__.'/fixtures/attachment.odt')),
+            $data['fileContents']
         );
     }
 
@@ -324,47 +334,47 @@ class ModelToElasticaAutoTransformerTest extends TestCase
         $this->assertArrayHasKey('sub', $data);
         $this->assertIsArray($data['sub']);
         $this->assertSame([
-             ['foo' => 'foo'],
-             ['foo' => 'bar'],
-           ], $data['sub']);
+            ['foo' => 'foo'],
+            ['foo' => 'bar'],
+        ], $data['sub']);
     }
 
     public function tesObjectMapping()
     {
         $transformer = $this->getTransformer();
         $document = $transformer->transform(new POPO3(), [
-                'sub' => [
-                    'type' => 'object',
-                    'properties' => ['bar'],
-                    ],
-                ]);
+            'sub' => [
+                'type' => 'object',
+                'properties' => ['bar'],
+            ],
+        ]);
         $data = $document->getData();
 
         $this->assertArrayHasKey('sub', $data);
         $this->assertIsArray($data['sub']);
         $this->assertSame([
-             ['bar' => 'foo'],
-             ['bar' => 'bar'],
-           ], $data['sub']);
+            ['bar' => 'foo'],
+            ['bar' => 'bar'],
+        ], $data['sub']);
     }
 
     public function testObjectDoesNotRequireProperties()
     {
         $transformer = $this->getTransformer();
         $document = $transformer->transform(new POPO3(), [
-                'obj' => [
-                    'type' => 'object',
-                    ],
-                ]);
+            'obj' => [
+                'type' => 'object',
+            ],
+        ]);
         $data = $document->getData();
 
         $this->assertArrayHasKey('obj', $data);
         $this->assertIsArray($data['obj']);
         $this->assertSame([
-             'foo' => 'foo',
-             'bar' => 'foo',
-             'id' => 1,
-       ], $data['obj']);
+            'foo' => 'foo',
+            'bar' => 'foo',
+            'id' => 1,
+        ], $data['obj']);
     }
 
     public function testObjectsMappingOfAtLeastOneAutoMappedObjectAndAtLeastOneManuallyMappedObject()
@@ -484,7 +494,7 @@ class ModelToElasticaAutoTransformerTest extends TestCase
         ]);
 
         $data = $document->getData();
-        $this->assertIsArray($data['nullValue']);
+        $this->assertNull($data['nullValue']);
         $this->assertEmpty($data['nullValue']);
     }
 
@@ -516,6 +526,23 @@ class ModelToElasticaAutoTransformerTest extends TestCase
         $document = $transformer->transform($object, []);
 
         $this->assertSame('00000000-0000-0000-0000-000000000000', $document->getId());
+    }
+
+    /**
+     * @requires PHP >= 8.1
+     */
+    public function testBackedEnumIsCastedToItsValue(): void
+    {
+        $object = new \stdClass();
+        $object->id = 123;
+        $object->int = $intEnum = FieldEnumInt::FOO;
+        $object->string = $stringEnum = FieldEnumString::FOO;
+
+        $transformer = $this->getTransformer();
+        $document = $transformer->transform($object, ['int' => 'int', 'string' => 'string']);
+
+        $this->assertSame($intEnum->value, $document->get('int'));
+        $this->assertSame($stringEnum->value, $document->get('string'));
     }
 
     /**

@@ -13,6 +13,7 @@ namespace FOS\ElasticaBundle\Command;
 
 use FOS\ElasticaBundle\Index\TemplateResetter;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -23,10 +24,7 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
  */
 final class ResetTemplatesCommand extends Command
 {
-    protected static $defaultName = 'fos:elastica:reset-templates';
-
-    /** @var TemplateResetter */
-    private $resetter;
+    private TemplateResetter $resetter;
 
     public function __construct(
         TemplateResetter $resetter
@@ -37,7 +35,7 @@ final class ResetTemplatesCommand extends Command
     }
 
     /**
-     * {@inheritdoc}
+     * @return void
      */
     protected function configure()
     {
@@ -60,15 +58,13 @@ final class ResetTemplatesCommand extends Command
         ;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $indexTemplate = $input->getOption('index');
         $deleteByPattern = $input->getOption('force-delete');
 
         if ($input->isInteractive() && $deleteByPattern) {
+            /** @var QuestionHelper $helper */
             $helper = $this->getHelper('question');
             $question = new ConfirmationQuestion('You are going to remove all template indexes. Are you sure?', false);
 

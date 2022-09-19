@@ -12,6 +12,7 @@
 namespace FOS\ElasticaBundle\Command;
 
 use FOS\ElasticaBundle\Configuration\ConfigManager;
+use FOS\ElasticaBundle\Configuration\IndexConfig;
 use FOS\ElasticaBundle\Index\AliasProcessor;
 use FOS\ElasticaBundle\Index\IndexManager;
 use FOS\ElasticaBundle\Index\MappingBuilder;
@@ -25,12 +26,10 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class CreateCommand extends Command
 {
-    protected static $defaultName = 'fos:elastica:create';
-
-    private $indexManager;
-    private $mappingBuilder;
-    private $configManager;
-    private $aliasProcessor;
+    private IndexManager $indexManager;
+    private MappingBuilder $mappingBuilder;
+    private ConfigManager $configManager;
+    private AliasProcessor $aliasProcessor;
 
     public function __construct(
         IndexManager $indexManager,
@@ -46,6 +45,9 @@ class CreateCommand extends Command
         $this->aliasProcessor = $aliasProcessor;
     }
 
+    /**
+     * @return void
+     */
     protected function configure()
     {
         $this
@@ -56,7 +58,7 @@ class CreateCommand extends Command
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $indexes = (null !== $index = $input->getOption('index')) ? [$index] : \array_keys($this->indexManager->getAllIndexes());
 
@@ -64,6 +66,9 @@ class CreateCommand extends Command
             $output->writeln(\sprintf('<info>Creating</info> <comment>%s</comment>', $indexName));
 
             $indexConfig = $this->configManager->getIndexConfiguration($indexName);
+            if (!$indexConfig instanceof IndexConfig) {
+                throw new \RuntimeException(\sprintf('Incorrect index configuration object. Expecting IndexConfig, but got: %s ', \get_class($indexConfig)));
+            }
             $index = $this->indexManager->getIndex($indexName);
             if ($indexConfig->isUseAlias()) {
                 $this->aliasProcessor->setRootName($indexConfig, $index);
@@ -72,7 +77,7 @@ class CreateCommand extends Command
             $index->create($mapping);
 
             if ($indexConfig->isUseAlias() && !$input->getOption('no-alias')) {
-                $index->addAlias($indexName);
+                $index->addAlias($indexConfig->getElasticSearchName());
             }
         }
 

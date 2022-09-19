@@ -24,20 +24,12 @@ use Psr\Log\LoggerInterface;
  */
 class ElasticaLogger extends AbstractLogger
 {
+    protected ?LoggerInterface $logger;
     /**
-     * @var LoggerInterface
+     * @var list<array<string, mixed>>
      */
-    protected $logger;
-
-    /**
-     * @var array
-     */
-    protected $queries = [];
-
-    /**
-     * @var bool
-     */
-    protected $debug;
+    protected array $queries = [];
+    protected bool $debug;
 
     public function __construct(?LoggerInterface $logger = null, bool $debug = false)
     {
@@ -48,13 +40,15 @@ class ElasticaLogger extends AbstractLogger
     /**
      * Logs a query.
      *
-     * @param string       $path       Path to call
-     * @param string       $method     Rest method to use (GET, POST, DELETE, PUT)
-     * @param array|string $data       Arguments
-     * @param float        $queryTime  Execution time (in seconds)
-     * @param array        $connection Host, port, transport, and headers of the query
-     * @param array        $query      Arguments
-     * @param int          $engineTime
+     * @param string              $path       Path to call
+     * @param string              $method     Rest method to use (GET, POST, DELETE, PUT)
+     * @param array<mixed>|string $data       Arguments
+     * @param float               $queryTime  Execution time (in seconds)
+     * @param array<mixed>        $connection Host, port, transport, and headers of the query
+     * @param array<mixed>        $query      Arguments
+     * @param int                 $engineTime
+     *
+     * @return void
      */
     public function logQuery(string $path, string $method, $data, $queryTime, $connection = [], $query = [], $engineTime = 0, int $itemCount = 0)
     {
@@ -103,6 +97,8 @@ class ElasticaLogger extends AbstractLogger
 
     /**
      * Returns a human-readable array of queries logged.
+     *
+     * @return list<array<string, mixed>>
      */
     public function getQueries(): array
     {
@@ -111,13 +107,15 @@ class ElasticaLogger extends AbstractLogger
 
     /**
      * {@inheritdoc}
+     *
+     * @param array<string, mixed> $context
      */
-    public function log($level, $message, array $context = [])
+    public function log($level, $message, array $context = []): void
     {
         $this->logger->log($level, $message, $context);
     }
 
-    public function reset()
+    public function reset(): void
     {
         $this->queries = [];
     }

@@ -21,6 +21,8 @@ use FOS\ElasticaBundle\Index\TemplateResetter;
  * Class Index templates test.
  *
  * @author Dmitry Balabka <dmitry.balabka@intexsys.lv>
+ *
+ * @internal
  */
 class IndexTemplatesTest extends WebTestCase
 {
@@ -28,17 +30,17 @@ class IndexTemplatesTest extends WebTestCase
     {
         self::bootKernel(['test_case' => 'Basic']);
 
-        $instance = self::$container->get('fos_elastica.index_template.index_template_example_1');
+        $instance = self::getContainer()->get('fos_elastica.index_template.index_template_example_1');
         $this->assertInstanceOf(IndexTemplate::class, $instance);
         $this->assertInstanceOf(OriginalIndexTemplate::class, $instance);
 
-        $instance = self::$container->get('fos_elastica.config_manager.index_templates');
+        $instance = self::getContainer()->get('fos_elastica.config_manager.index_templates');
         $this->assertInstanceOf(ConfigManager::class, $instance);
 
-        $instance = self::$container->get('fos_elastica.index_template_manager');
+        $instance = self::getContainer()->get('fos_elastica.index_template_manager');
         $this->assertInstanceOf(IndexTemplateManager::class, $instance);
 
-        $instance = self::$container->get('fos_elastica.template_resetter');
+        $instance = self::getContainer()->get('fos_elastica.template_resetter');
         $this->assertInstanceOf(TemplateResetter::class, $instance);
     }
 }

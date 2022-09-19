@@ -23,10 +23,13 @@ class IndexTemplateManager
     /**
      * Templates.
      *
-     * @var array
+     * @var array<string, IndexTemplate>
      */
     private $templates;
 
+    /**
+     * @param array<string, IndexTemplate> $templates
+     */
     public function __construct(array $templates)
     {
         $this->templates = $templates;
@@ -37,9 +40,9 @@ class IndexTemplateManager
      *
      * @param string $name Index template to return
      *
-     * @return IndexTemplate
-     *
      * @throws \InvalidArgumentException if no index template exists for the given name
+     *
+     * @return IndexTemplate
      */
     public function getIndexTemplate($name)
     {

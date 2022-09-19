@@ -11,10 +11,10 @@ jobs:
       - name: 'Setup PHP'
         uses: 'shivammathur/setup-php@v2'
         with:
-          php-version: '7.4'
+          php-version: '8.1'
           coverage: 'none'
           extensions: 'json, mbstring, tokenizer'
-          tools: 'composer-normalize, php-cs-fixer:2.18.3'
+          tools: 'composer-normalize, php-cs-fixer:3.8.0'
 
       - name: 'Display tools versions'
         run: |
@@ -22,7 +22,7 @@ jobs:
           php-cs-fixer --version
 
       - name: 'Check PHP code'
-        run: 'php-cs-fixer fix --diff --dry-run --allow-risky=yes --using-cache=false'
+        run: 'php-cs-fixer fix --diff --dry-run --allow-risky=yes --using-cache=no'
 
       - name: 'Check composer.json'
         run: 'composer-normalize --diff --dry-run --no-update-lock'
@@ -30,24 +30,34 @@ jobs:
 
   phpunit:
     runs-on: 'ubuntu-20.04'
-    name: 'PHPUnit (PHP ${{ matrix.php }}, ES ${{ matrix.elasticsearch }})'
+    name: 'PHPUnit (PHP ${{ matrix.php }}, Symfony ${{ matrix.symfony }} + ${{ matrix.dependencies }} deps, ES ${{ matrix.elasticsearch }})'
     timeout-minutes: 10
+    env:
+      SYMFONY_REQUIRE: "${{ matrix.symfony }}"
     strategy:
       matrix:
+        php:
+          - '7.4'
+          - '8.0'
+          - '8.1'
+        symfony:
+          - '4.4.*'
+          - '5.4.*'
+          - '6.0.*'
+        elasticsearch:
+          - '7.11.0'
+        dependencies:
+          - 'highest'
         include:
-          - php: '7.2'
-            elasticsearch: '7.0.0'
-            composer_flags: '--prefer-lowest --prefer-stable'
-            symfony_require: '4.4.*'
-          - php: '7.3'
-            elasticsearch: '7.4.0'
-            composer_flags: '--prefer-stable'
           - php: '7.4'
-            elasticsearch: '7.9.0'
-            composer_flags: '--prefer-stable'
-          - php: '8.0'
+            elasticsearch: '7.0.0'
+            dependencies: 'lowest'
+            symfony: '4.4.*'
+        exclude:
+          - php: '7.4'
+            symfony: '6.0.*'
+            dependencies: 'highest'
             elasticsearch: '7.11.0'
-            composer_flags: '--prefer-stable'
       fail-fast: false
     steps:
       - name: 'Checkout'
@@ -58,29 +68,14 @@ jobs:
         with:
           php-version: '${{ matrix.php }}'
           coverage: 'none'
-          tools: 'pecl, composer:v2'
-          extensions: 'curl, json, mbstring, mongodb-1.9.0, openssl'
+          tools: 'pecl, composer:v2, flex'
+          extensions: 'curl, json, mbstring, mongodb, openssl'
 
-      - name: 'Get composer cache directory'
-        id: 'composer_cache'
-        run: |
-          echo "::set-output name=dir::$(composer config cache-files-dir)"
-
-      - name: 'Cache dependencies'
-        uses: 'actions/cache@v2'
+      - name: "Install Composer dependencies (${{ matrix.dependencies }})"
+        uses: "ramsey/composer-install@v1"
         with:
-          path: '${{ steps.composer_cache.outputs.dir }}'
-          key: '${{ runner.os }}-composer-php${{ matrix.php }}-${{ hashFiles(''**/composer.json'') }}'
-          restore-keys: |
-            ${{ runner.os }}-composer-php${{ matrix.php }}-
-            ${{ runner.os }}-composer-
-
-      - name: 'Update dependencies'
-        env:
-          SYMFONY_REQUIRE: "${{ matrix.symfony_require }}"
-        run: |
-          composer global require --no-progress --no-scripts --no-plugins symfony/flex
-          composer update --prefer-dist --no-interaction --no-progress --ansi ${{ matrix.composer_flags }}
+            dependency-versions: "${{ matrix.dependencies }}"
+            composer-options: "--prefer-dist --prefer-stable"
 
       - name: 'Setup Elasticsearch'
         run: |
@@ -95,3 +90,52 @@ jobs:
       - name: 'Run unit tests'
         run: |
           vendor/bin/phpunit
+
+  phpstan:
+    runs-on: 'ubuntu-latest'
+    name: 'PHPStan (PHP ${{ matrix.php }}, Symfony ${{ matrix.symfony }} + ${{ matrix.dependencies }} deps)'
+    timeout-minutes: 10
+    env:
+      SYMFONY_REQUIRE: "${{ matrix.symfony }}"
+    strategy:
+      matrix:
+        php:
+          - '7.4'
+          - '8.0'
+          - '8.1'
+        symfony:
+          - '4.4.*'
+          - '5.4.*'
+          - '6.0.*'
+        dependencies:
+          - 'highest'
+        include:
+          - php: '7.4'
+            dependencies: 'lowest'
+            symfony: '4.4.*'
+        exclude:
+          - php: '7.4'
+            symfony: '6.0.*'
+            dependencies: 'highest'
+      fail-fast: false
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@v2'
+
+      - name: 'Setup PHP'
+        uses: 'shivammathur/setup-php@v2'
+        with:
+          php-version: '${{ matrix.php }}'
+          coverage: 'none'
+          tools: 'pecl, composer:v2, flex'
+          extensions: 'curl, json, mbstring, mongodb, openssl'
+
+      - name: "Install Composer dependencies (${{ matrix.dependencies }})"
+        uses: "ramsey/composer-install@v1"
+        with:
+          dependency-versions: "${{ matrix.dependencies }}"
+          composer-options: "--prefer-dist --prefer-stable"
+
+      - name: 'Run PHPStan'
+        run: |
+          composer sca

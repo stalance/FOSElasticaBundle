@@ -25,9 +25,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class SearchCommand extends Command
 {
-    protected static $defaultName = 'fos:elastica:search';
-
-    private $indexManager;
+    private IndexManager $indexManager;
 
     public function __construct(IndexManager $indexManager)
     {
@@ -36,6 +34,9 @@ class SearchCommand extends Command
         $this->indexManager = $indexManager;
     }
 
+    /**
+     * @return void
+     */
     protected function configure()
     {
         $this
@@ -51,12 +52,12 @@ class SearchCommand extends Command
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $indexName = $input->getOption('index');
-        $index = $this->indexManager->getIndex($indexName ? $indexName : null);
+        $index = $this->indexManager->getIndex($indexName ?: null);
         $query = Query::create($input->getArgument('query'));
-        $query->setSize($input->getOption('limit'));
+        $query->setSize((int) $input->getOption('limit'));
         if ($input->getOption('explain')) {
             $query->setExplain(true);
         }

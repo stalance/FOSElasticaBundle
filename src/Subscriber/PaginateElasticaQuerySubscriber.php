@@ -20,23 +20,23 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 class PaginateElasticaQuerySubscriber implements EventSubscriberInterface
 {
-    /**
-     * @var RequestStack
-     */
-    private $requestStack;
+    private RequestStack $requestStack;
 
     public function __construct(RequestStack $requestStack)
     {
         $this->requestStack = $requestStack;
     }
 
+    /**
+     * @return void
+     */
     public function items(ItemsEvent $event)
     {
         if ($event->target instanceof PaginatorAdapterInterface) {
             // Add sort to query
             $this->setSorting($event);
 
-            /** @var $results PartialResultsInterface */
+            /** @var PartialResultsInterface $results */
             $results = $event->target->getResults($event->getOffset(), $event->getLimit());
 
             $event->count = $results->getTotalHits();
@@ -50,10 +50,7 @@ class PaginateElasticaQuerySubscriber implements EventSubscriberInterface
         }
     }
 
-    /**
-     * @return array
-     */
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             'knp_pager.items' => ['items', 1],
@@ -62,10 +59,13 @@ class PaginateElasticaQuerySubscriber implements EventSubscriberInterface
 
     /**
      * Adds knp paging sort to query.
+     *
+     * @return void
      */
     protected function setSorting(ItemsEvent $event)
     {
         // Bugfix for PHP 7.4 as options can be null and generate a "Trying to access array offset on value of type null" error
+        // @phpstan-ignore-next-line
         $options = $event->options ?? [];
         $sortField = $this->getFromRequest($options['sortFieldParameterName'] ?? null);
 
@@ -80,6 +80,12 @@ class PaginateElasticaQuerySubscriber implements EventSubscriberInterface
         }
     }
 
+    /**
+     * @param string               $sortField
+     * @param array<string, mixed> $options
+     *
+     * @return array<string, mixed>
+     */
     protected function getSort($sortField, array $options = [])
     {
         $sort = [
@@ -107,6 +113,12 @@ class PaginateElasticaQuerySubscriber implements EventSubscriberInterface
         return $sort;
     }
 
+    /**
+     * @param string               $sortField
+     * @param array<string, mixed> $options
+     *
+     * @return string
+     */
     protected function getSortDirection($sortField, array $options = [])
     {
         $dir = 'asc';
@@ -116,12 +128,12 @@ class PaginateElasticaQuerySubscriber implements EventSubscriberInterface
             $sortDirection = $options['defaultSortDirection'];
         }
 
-        if ('desc' === \strtolower($sortDirection)) {
+        if (null !== $sortDirection && 'desc' === \strtolower($sortDirection)) {
             $dir = 'desc';
         }
 
         // check if the requested sort field is in the sort whitelist
-        if (isset($options['sortFieldWhitelist']) && !\in_array($sortField, $options['sortFieldWhitelist'], true)) {
+        if (isset($options['sortFieldAllowList']) && !\in_array($sortField, $options['sortFieldAllowList'], true)) {
             throw new \UnexpectedValueException(\sprintf('Cannot sort by: [%s] this field is not in whitelist', $sortField));
         }
 

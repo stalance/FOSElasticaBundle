@@ -25,10 +25,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class DeleteCommand extends Command
 {
-    protected static $defaultName = 'fos:elastica:delete';
-
-    private $client;
-    private $indexManager;
+    private Client $client;
+    private IndexManager $indexManager;
 
     public function __construct(
         Client $client,
@@ -40,15 +38,19 @@ class DeleteCommand extends Command
         $this->indexManager = $indexManager;
     }
 
+    /**
+     * @return void
+     */
     protected function configure()
     {
         $this
+            ->setName('fos:elastica:delete')
             ->addOption('index', null, InputOption::VALUE_OPTIONAL, 'Index that needs to be deleted')
             ->setDescription('Deleting an index')
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $indexName = $input->getOption('index');
         $indexes = null === $indexName ? \array_keys($this->indexManager->getAllIndexes()) : [$indexName];

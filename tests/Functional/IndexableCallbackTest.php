@@ -15,6 +15,8 @@ use FOS\ElasticaBundle\Provider\Indexable;
 
 /**
  * @group functional
+ *
+ * @internal
  */
 class IndexableCallbackTest extends WebTestCase
 {
@@ -30,7 +32,7 @@ class IndexableCallbackTest extends WebTestCase
         self::bootKernel(['test_case' => 'ORM']);
 
         /** @var Indexable $in */
-        $in = self::$container->get('test_alias.fos_elastica.indexable');
+        $in = self::getContainer()->get('test_alias.fos_elastica.indexable');
 
         $this->assertTrue($in->isObjectIndexable('index', new TypeObj()));
         $this->assertTrue($in->isObjectIndexable('third_index', new TypeObj()));

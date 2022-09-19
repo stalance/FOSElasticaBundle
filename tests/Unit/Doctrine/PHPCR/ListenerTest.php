@@ -11,9 +11,12 @@
 
 namespace FOS\ElasticaBundle\Tests\Unit\Doctrine\PHPCR;
 
-use FOS\ElasticaBundle\Tests\Unit\Doctrine\ListenerTest as BaseListenerTest;
+use FOS\ElasticaBundle\Tests\Unit\Doctrine\AbstractListenerTest;
 
-class ListenerTest extends BaseListenerTest
+/**
+ * @internal
+ */
+class ListenerTest extends AbstractListenerTest
 {
     protected function setUp(): void
     {

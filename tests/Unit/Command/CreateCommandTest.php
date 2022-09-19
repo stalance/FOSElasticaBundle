@@ -24,6 +24,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * @author Oleg Andreyev <oleg.andreyev@intexsys.lv>
+ *
+ * @internal
  */
 class CreateCommandTest extends TestCase
 {
@@ -97,6 +99,7 @@ class CreateCommandTest extends TestCase
         $this->configManager->expects($this->once())->method('getIndexConfiguration')->with($indexName)->willReturn($this->indexConfig);
         $this->indexManager->expects($this->once())->method('getIndex')->with($indexName)->willReturn($this->index);
         $this->indexConfig->expects($this->exactly(2))->method('isUseAlias')->willReturn(true);
+        $this->indexConfig->expects($this->once())->method('getElasticSearchName')->willReturn($indexName);
         $this->aliasProcessor->expects($this->once())->method('setRootName')->with($this->indexConfig, $this->index);
         $this->mappingBuilder->expects($this->once())->method('buildIndexMapping')->with($this->indexConfig)->willReturn($mapping);
         $this->index->expects($this->once())->method('create')->with(['mapping'], false);
@@ -171,11 +174,13 @@ class CreateCommandTest extends TestCase
 
         $this->configManager->expects($this->exactly(2))->method('getIndexConfiguration')
             ->withConsecutive(['foo'], ['bar'])
-            ->willReturnOnConsecutiveCalls($indexConfig1, $indexConfig2);
+            ->willReturnOnConsecutiveCalls($indexConfig1, $indexConfig2)
+        ;
 
         $this->indexManager->expects($this->exactly(2))->method('getIndex')
             ->withConsecutive(['foo'], ['bar'])
-            ->willReturnOnConsecutiveCalls($index1, $index2);
+            ->willReturnOnConsecutiveCalls($index1, $index2)
+        ;
 
         $indexConfig1->expects($this->exactly(2))->method('isUseAlias')->willReturn(false);
         $indexConfig2->expects($this->exactly(2))->method('isUseAlias')->willReturn(false);
@@ -184,7 +189,8 @@ class CreateCommandTest extends TestCase
 
         $this->mappingBuilder->expects($this->exactly(2))->method('buildIndexMapping')
             ->withConsecutive([$indexConfig1], [$indexConfig2])
-            ->willReturn($mapping);
+            ->willReturn($mapping)
+        ;
 
         $index1->expects($this->once())->method('create')->with(['mapping'], false);
         $index1->expects($this->never())->method('addAlias');

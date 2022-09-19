@@ -22,10 +22,8 @@ class Configuration implements ConfigurationInterface
 
     /**
      * If the kernel is running in debug mode.
-     *
-     * @var bool
      */
-    private $debug;
+    private bool $debug;
 
     public function __construct(bool $debug)
     {
@@ -34,10 +32,8 @@ class Configuration implements ConfigurationInterface
 
     /**
      * Generates the configuration tree.
-     *
-     * @return TreeBuilder
      */
-    public function getConfigTreeBuilder()
+    public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('fos_elastica');
         $rootNode = $treeBuilder->getRootNode();
@@ -113,14 +109,15 @@ class Configuration implements ConfigurationInterface
     /**
      * Returns the array node used for "properties".
      */
-    private function getPropertiesNode()
+    private function getPropertiesNode(): ArrayNodeDefinition
     {
         $node = $this->createTreeBuilderNode('properties');
 
         $node
             ->useAttributeAsKey('name')
             ->prototype('variable')
-                ->treatNullLike([]);
+                ->treatNullLike([])
+        ;
 
         return $node;
     }
@@ -128,7 +125,7 @@ class Configuration implements ConfigurationInterface
     /**
      * Returns the array node used for "_id".
      */
-    private function getIdNode()
+    private function getIdNode(): ArrayNodeDefinition
     {
         $node = $this->createTreeBuilderNode('_id');
 
@@ -144,7 +141,7 @@ class Configuration implements ConfigurationInterface
     /**
      * Returns the array node used for "_source".
      */
-    private function getSourceNode()
+    private function getSourceNode(): ArrayNodeDefinition
     {
         $node = $this->createTreeBuilderNode('_source');
 
@@ -170,7 +167,7 @@ class Configuration implements ConfigurationInterface
     /**
      * Returns the array node used for "_routing".
      */
-    private function getRoutingNode()
+    private function getRoutingNode(): ArrayNodeDefinition
     {
         $node = $this->createTreeBuilderNode('_routing');
 
@@ -185,7 +182,7 @@ class Configuration implements ConfigurationInterface
     }
 
     /**
-     * @return ArrayNodeDefinition|\Symfony\Component\Config\Definition\Builder\NodeDefinition
+     * @return ArrayNodeDefinition
      */
     private function getPersistenceNode()
     {
@@ -219,6 +216,7 @@ class Configuration implements ConfigurationInterface
                             ->treatNullLike(true)
                         ->end()
                         ->scalarNode('query_builder_method')->defaultValue('createQueryBuilder')->end()
+                        ->scalarNode('locale')->end()
                         ->scalarNode('service')->end()
                     ->end()
                 ->end()
@@ -281,13 +279,14 @@ class Configuration implements ConfigurationInterface
                         ->scalarNode('service')->end()
                     ->end()
                 ->end()
-            ->end();
+            ->end()
+        ;
 
         return $node;
     }
 
     /**
-     * @return ArrayNodeDefinition|\Symfony\Component\Config\Definition\Builder\NodeDefinition
+     * @return ArrayNodeDefinition
      */
     private function getSerializerNode()
     {
@@ -304,7 +303,8 @@ class Configuration implements ConfigurationInterface
                 ->booleanNode('serialize_null')
                     ->defaultFalse()
                 ->end()
-            ->end();
+            ->end()
+        ;
 
         return $node;
     }
@@ -312,7 +312,7 @@ class Configuration implements ConfigurationInterface
     /**
      * Adds the configuration for the "clients" key.
      */
-    private function addClientsSection(ArrayNodeDefinition $rootNode)
+    private function addClientsSection(ArrayNodeDefinition $rootNode): void
     {
         $rootNode
             ->fixXmlConfig('client')
@@ -379,6 +379,7 @@ class Configuration implements ConfigurationInterface
                                         ->scalarNode('aws_secret_access_key')->end()
                                         ->scalarNode('aws_region')->end()
                                         ->scalarNode('aws_session_token')->end()
+                                        ->scalarNode('aws_credential_provider')->end()
                                         ->booleanNode('ssl')->defaultValue(false)->end()
                                         ->scalarNode('logger')
                                             ->defaultValue($this->debug ? 'fos_elastica.logger' : false)
@@ -420,7 +421,7 @@ class Configuration implements ConfigurationInterface
     /**
      * Adds the configuration for the "indexes" key.
      */
-    private function addIndexesSection(ArrayNodeDefinition $rootNode)
+    private function addIndexesSection(ArrayNodeDefinition $rootNode): void
     {
         $rootNode
             ->fixXmlConfig('index')
@@ -468,9 +469,9 @@ class Configuration implements ConfigurationInterface
     }
 
     /**
-     * @return ArrayNodeDefinition|\Symfony\Component\Config\Definition\Builder\NodeDefinition
+     * @return ArrayNodeDefinition
      */
-    private function createTreeBuilderNode($name)
+    private function createTreeBuilderNode(string $name)
     {
         return (new TreeBuilder($name))->getRootNode();
     }

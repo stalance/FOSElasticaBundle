@@ -21,11 +21,14 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * Maps Elastica documents with Doctrine objects
  * This mapper assumes an exact match between
  * elastica documents ids and doctrine object ids.
+ *
+ * @phpstan-import-type TFields from ModelToElasticaTransformerInterface
+ * @phpstan-type TOptions = array{identifier: string, index: string}
  */
 class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterface
 {
     /**
-     * @var EventDispatcherInterface
+     * @var ?EventDispatcherInterface
      */
     protected $dispatcher;
 
@@ -33,6 +36,7 @@ class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterf
      * Optional parameters.
      *
      * @var array
+     * @phpstan-var TOptions
      */
     protected $options = [
         'identifier' => 'id',
@@ -48,6 +52,8 @@ class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterf
 
     /**
      * Instanciates a new Mapper.
+     *
+     * @phpstan-param array<string, mixed> $options
      */
     public function __construct(array $options = [], ?EventDispatcherInterface $dispatcher = null)
     {
@@ -58,14 +64,14 @@ class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterf
     /**
      * Set the PropertyAccessor.
      */
-    public function setPropertyAccessor(PropertyAccessorInterface $propertyAccessor)
+    public function setPropertyAccessor(PropertyAccessorInterface $propertyAccessor): void
     {
         $this->propertyAccessor = $propertyAccessor;
     }
 
     /**
      * Transforms an object into an elastica object having the required keys.
-     **/
+     */
     public function transform(object $object, array $fields): Document
     {
         $identifier = $this->propertyAccessor->getValue($object, $this->options['identifier']);
@@ -76,14 +82,15 @@ class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterf
     /**
      * transform a nested document or an object property into an array of ElasticaDocument.
      *
-     * @param array|\Traversable|\ArrayAccess $objects the object to convert
-     * @param array                           $fields  the keys we want to have in the returned array
+     * @param array<object>|\Traversable<object>|\ArrayAccess<mixed,mixed>|null $objects the object to convert
+     * @param array                                                             $fields  the keys we want to have in the returned array
+     * @phpstan-param TFields $fields
      *
-     * @return array
+     * @return array<mixed>
      */
-    protected function transformNested($objects, array $fields)
+    protected function transformNested($objects, array $fields): ?array
     {
-        if (\is_array($objects) || $objects instanceof \Traversable || $objects instanceof \ArrayAccess) {
+        if (\is_iterable($objects)) {
             $documents = [];
             foreach ($objects as $object) {
                 $document = $this->transformObjectToDocument($object, $fields);
@@ -91,13 +98,15 @@ class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterf
             }
 
             return $documents;
-        } elseif (null !== $objects) {
+        }
+
+        if (null !== $objects) {
             $document = $this->transformObjectToDocument($objects, $fields);
 
             return $document->getData();
         }
 
-        return [];
+        return null;
     }
 
     /**
@@ -105,19 +114,21 @@ class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterf
      *
      * @param mixed $value
      *
-     * @return string|array
+     * @return string|list<string>
      */
     protected function normalizeValue($value)
     {
-        $normalizeValue = function (&$v) {
+        $normalizeValue = static function (&$v) {
             if ($v instanceof \DateTimeInterface) {
                 $v = $v->format('c');
+            } elseif (\PHP_VERSION_ID >= 80100 && $v instanceof \BackedEnum) {
+                $v = $v->value;
             } elseif (!\is_scalar($v) && null !== $v) {
                 $v = (string) $v;
             }
         };
 
-        if (\is_array($value) || $value instanceof \Traversable || $value instanceof \ArrayAccess) {
+        if (\is_iterable($value)) {
             $value = \is_array($value) ? $value : \iterator_to_array($value, false);
             \array_walk_recursive($value, $normalizeValue);
         } else {
@@ -129,6 +140,8 @@ class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterf
 
     /**
      * Transforms the given object to an elastica document.
+     *
+     * @phpstan-param TFields $fields
      */
     protected function transformObjectToDocument(object $object, array $fields, string $identifier = ''): Document
     {
@@ -147,9 +160,9 @@ class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterf
             }
             $value = $this->propertyAccessor->getValue($object, $path);
 
-            if (isset($mapping['type'])
+            if (isset($mapping['properties'], $mapping['type'])
+                && $mapping['properties']
                 && \in_array($mapping['type'], ['nested', 'object'], true)
-                && isset($mapping['properties']) && !empty($mapping['properties'])
             ) {
                 /* $value is a nested document or object. Transform $value into
                  * an array of documents, respective the mapped properties.
@@ -159,7 +172,7 @@ class ModelToElasticaAutoTransformer implements ModelToElasticaTransformerInterf
                 continue;
             }
 
-            if (isset($mapping['type']) && 'attachment' == $mapping['type']) {
+            if ('attachment' === ($mapping['type'] ?? null)) {
                 // $value is an attachment. Add it to the document.
                 if ($value instanceof \SplFileInfo) {
                     $document->addFile($key, $value->getPathName());

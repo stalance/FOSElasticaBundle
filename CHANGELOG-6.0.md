@@ -1,10 +1,35 @@
-CHANGELOG for 6.0.x
+CHANGELOG for 6.x
 ===================
 
 This changelog references the relevant changes (bug and security fixes) done
-in 6.0 versions.
+in 6.x versions.
 
-### 6.0.0-RC1 (2021-xx-xx)
+### 6.2.0 (2022-08-31)
+* Improved Symfony 6.1 support.
+* Added PHPStan integration.
+* Added support for `aws_credential_provider`.
+* Added `BackedEnum` support in `ModelToElasticaAutoTransformer`.
+* Fix: don't escape unicode in the query log.
+* Fixed index name for aliased index in `CreateCommand`.
+
+### 6.1.0 (2022-01-16)
+* Added Symfony 6.0 support.
+* Dropped Symfony 5.3 supoport.
+* Fixed several deprecation notices.
+* Restore defer config on terminate listener event.
+* Return null instead of empty array for a null object in Elastica Document.
+* Fixed object count in `AsyncPagerPersister`.
+
+### 6.0.0 (2021-10-13)
+
+* Added PHPCR locale support.
+* Dropped PHP 7.2 & 7.3 support.
+* Dropped Symfony 5.1 and 5.2 support.
+* Fixed deprecated `knp_paginator.subscriber` tag.
+* **[BC break]** Changed signature of `FOS\ElasticaBundle\Configuration\Source\SourceInterface::getConfiguration()`.
+* **[BC break]** Changed signature of methods `resetAllIndexes` and `resetIndex` from interface `FOS\ElasticaBundle\Index\ResetterInterface` and its implementations.
+
+### 6.0.0-BETA4 (2021-05-24)
 
 * Added PHP 8 support,
 * Added `auth_type` client parameter [Elastica#1790](https://github.com/ruflin/Elastica/pull/1790).
@@ -16,9 +41,9 @@ in 6.0 versions.
 * **[BC break]** Marked the `fos_elastica.client_prototype` service as private.
 * **[BC break]** Marked the `fos_elastica.index_template_prototype` service as private.
 * **[BC break]** Marked all events final and introduced several abstract classes.
-* **[BC break]** Signature of `FantaPaginatorAdapter::getNbResults()` has changed.
-* **[BC break]** Signature of `FantaPaginatorAdapter::getSlice()` has changed.
-* **[BC break]** Signature of `PartialResultsInterface::toArray()`, `PartialResultsInterface::getTotalHits()` and `PartialResultsInterface::getAggregations()` have changed.
+* **[BC break]** Changed signature of `FantaPaginatorAdapter::getNbResults()`.
+* **[BC break]** Changed signature of `FantaPaginatorAdapter::getSlice()`.
+* **[BC break]** Changed signature of `PartialResultsInterface::toArray()`, `PartialResultsInterface::getTotalHits()` and `PartialResultsInterface::getAggregations()`.
 
 ### 6.0.0-BETA3 (2020-09-28)
 

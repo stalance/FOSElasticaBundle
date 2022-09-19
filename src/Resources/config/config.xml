@@ -6,7 +6,7 @@
 
     <parameters>
         <parameter key="fos_elastica.property_accessor.magicCall">0</parameter>
-        <parameter key="fos_elastica.property_accessor.throwExceptionOnInvalidIndex">false</parameter>
+        <parameter key="fos_elastica.property_accessor.throwExceptionOnInvalidIndex">0</parameter>
     </parameters>
 
     <services>
@@ -34,7 +34,7 @@
         </service>
 
         <service id="fos_elastica.paginator.subscriber" class="FOS\ElasticaBundle\Subscriber\PaginateElasticaQuerySubscriber">
-            <tag name="knp_paginator.subscriber" />
+            <tag name="kernel.event_subscriber" />
             <argument type="service" id="request_stack" />
         </service>
 

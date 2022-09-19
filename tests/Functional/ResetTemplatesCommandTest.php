@@ -18,6 +18,8 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 /**
  * @author Dmitry Balabka <dmitry.balabka@intexsys.lv>
+ *
+ * @internal
  */
 class ResetTemplatesCommandTest extends WebTestCase
 {
@@ -42,7 +44,7 @@ class ResetTemplatesCommandTest extends WebTestCase
         // required for old supported Symfony
         $application->all();
 
-        $this->client = self::$container->get('fos_elastica.client');
+        $this->client = self::getContainer()->get('fos_elastica.client');
     }
 
     public function testResetAllTemplates()

@@ -12,6 +12,7 @@
 namespace FOS\ElasticaBundle\Doctrine;
 
 use Doctrine\Persistence\ManagerRegistry;
+use Elastica\Result;
 use FOS\ElasticaBundle\HybridResult;
 use FOS\ElasticaBundle\Transformer\AbstractElasticaToModelTransformer as BaseTransformer;
 use FOS\ElasticaBundle\Transformer\HighlightableModelInterface;
@@ -25,24 +26,20 @@ abstract class AbstractElasticaToModelTransformer extends BaseTransformer
 {
     /**
      * Manager registry.
-     *
-     * @var ManagerRegistry
      */
-    protected $registry = null;
+    protected ManagerRegistry $registry;
 
     /**
      * Class of the model to map to the elastica documents.
      *
-     * @var string
+     * @phpstan-var class-string
      */
-    protected $objectClass = null;
+    protected string $objectClass;
 
     /**
      * Optional parameters.
-     *
-     * @var array
      */
-    protected $options = [
+    protected array $options = [
         'hints' => [],
         'hydrate' => true,
         'identifier' => 'id',
@@ -72,12 +69,12 @@ abstract class AbstractElasticaToModelTransformer extends BaseTransformer
      * Transforms an array of elastica objects into an array of
      * model objects fetched from the doctrine repository.
      *
-     * @param array $elasticaObjects of elastica objects
+     * @param Result[] $elasticaObjects of elastica objects
      *
      * @throws \RuntimeException
      *
      * @return array
-     **/
+     */
     public function transform(array $elasticaObjects)
     {
         $ids = $highlights = [];
@@ -92,7 +89,7 @@ abstract class AbstractElasticaToModelTransformer extends BaseTransformer
         $propertyAccessor = $this->propertyAccessor;
         $identifier = $this->options['identifier'];
         if (!$this->options['ignore_missing'] && $objectsCnt < $elasticaObjectsCnt) {
-            $missingIds = \array_diff($ids, \array_map(function ($object) use ($propertyAccessor, $identifier) {
+            $missingIds = \array_diff($ids, \array_map(static function ($object) use ($propertyAccessor, $identifier) {
                 return $propertyAccessor->getValue($object, $identifier);
             }, $objects));
 
@@ -115,10 +112,10 @@ abstract class AbstractElasticaToModelTransformer extends BaseTransformer
                     return $idPos[(string) $propertyAccessor->getValue(
                         $a,
                         $identifier
-                    )] > $idPos[(string) $propertyAccessor->getValue($b, $identifier)];
+                    )] <=> $idPos[(string) $propertyAccessor->getValue($b, $identifier)];
                 }
 
-                return $idPos[$a[$identifier]] > $idPos[$b[$identifier]];
+                return $idPos[$a[$identifier]] <=> $idPos[$b[$identifier]];
             }
         );
 

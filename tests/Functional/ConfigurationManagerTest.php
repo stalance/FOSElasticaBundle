@@ -16,6 +16,8 @@ use FOS\ElasticaBundle\Configuration\IndexConfig;
 
 /**
  * @group functional
+ *
+ * @internal
  */
 class ConfigurationManagerTest extends WebTestCase
 {
@@ -23,7 +25,7 @@ class ConfigurationManagerTest extends WebTestCase
     {
         static::bootKernel(['test_case' => 'Basic']);
         /** @var ConfigManager $manager */
-        $manager = self::$container->get('fos_elastica.config_manager');
+        $manager = self::getContainer()->get('fos_elastica.config_manager');
 
         $index = $manager->getIndexConfiguration('index');
 

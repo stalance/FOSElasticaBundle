@@ -12,6 +12,7 @@
 namespace FOS\ElasticaBundle\Command;
 
 use Elastica\Exception\Bulk\ResponseException as BulkResponseException;
+use FOS\ElasticaBundle\Event\AbstractIndexPopulateEvent;
 use FOS\ElasticaBundle\Event\PostIndexPopulateEvent;
 use FOS\ElasticaBundle\Event\PreIndexPopulateEvent;
 use FOS\ElasticaBundle\Index\IndexManager;
@@ -30,44 +31,21 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Populate the search index.
+ *
+ * @phpstan-import-type TOptions from AbstractIndexPopulateEvent
  */
 class PopulateCommand extends Command
 {
-    protected static $defaultName = 'fos:elastica:populate';
-
-    /**
-     * @var EventDispatcherInterface
-     */
-    private $dispatcher;
-
-    /**
-     * @var IndexManager
-     */
-    private $indexManager;
-
-    /**
-     * @var PagerProviderRegistry
-     */
-    private $pagerProviderRegistry;
-
-    /**
-     * @var PagerPersisterRegistry
-     */
-    private $pagerPersisterRegistry;
-
-    /**
-     * @var PagerPersisterInterface
-     */
-    private $pagerPersister;
-
-    /**
-     * @var Resetter
-     */
-    private $resetter;
+    private EventDispatcherInterface $dispatcher;
+    private IndexManager $indexManager;
+    private PagerProviderRegistry $pagerProviderRegistry;
+    private PagerPersisterRegistry $pagerPersisterRegistry;
+    private PagerPersisterInterface $pagerPersister;
+    private Resetter $resetter;
 
     public function __construct(
         EventDispatcherInterface $dispatcher,
@@ -85,6 +63,9 @@ class PopulateCommand extends Command
         $this->resetter = $resetter;
     }
 
+    /**
+     * @return void
+     */
     protected function configure()
     {
         $this
@@ -105,6 +86,9 @@ class PopulateCommand extends Command
         ;
     }
 
+    /**
+     * @return void
+     */
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->pagerPersister = $this->pagerPersisterRegistry->getPagerPersister($input->getOption('pager-persister'));
@@ -117,12 +101,13 @@ class PopulateCommand extends Command
         }
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $indexes = (null !== $index = $input->getOption('index')) ? [$index] : \array_keys($this->indexManager->getAllIndexes());
         $reset = !$input->getOption('no-reset');
         $delete = !$input->getOption('no-delete');
 
+        /** @var TOptions $options */
         $options = [
             'delete' => $delete,
             'reset' => $reset,
@@ -153,8 +138,10 @@ class PopulateCommand extends Command
 
     /**
      * Recreates an index, populates it, and refreshes it.
+     *
+     * @phpstan-param TOptions $options
      */
-    private function populateIndex(OutputInterface $output, string $index, bool $reset, $options): void
+    private function populateIndex(OutputInterface $output, string $index, bool $reset, array $options): void
     {
         $this->dispatcher->dispatch($event = new PreIndexPopulateEvent($index, $reset, $options));
 

@@ -12,7 +12,9 @@
 namespace FOS\ElasticaBundle\Finder;
 
 use Elastica\Query;
+use Elastica\Result;
 use Elastica\SearchableInterface;
+use FOS\ElasticaBundle\HybridResult;
 use FOS\ElasticaBundle\Paginator\FantaPaginatorAdapter;
 use FOS\ElasticaBundle\Paginator\HybridPaginatorAdapter;
 use FOS\ElasticaBundle\Paginator\RawPaginatorAdapter;
@@ -24,18 +26,14 @@ use Pagerfanta\Pagerfanta;
 
 /**
  * Finds elastica documents and map them to persisted objects.
+ *
+ * @phpstan-import-type TQuery from FinderInterface
+ * @phpstan-import-type TOptions from FinderInterface
  */
 class TransformedFinder implements PaginatedFinderInterface
 {
-    /**
-     * @var SearchableInterface
-     */
-    protected $searchable;
-
-    /**
-     * @var ElasticaToModelTransformerInterface
-     */
-    protected $transformer;
+    protected SearchableInterface $searchable;
+    protected ElasticaToModelTransformerInterface $transformer;
 
     public function __construct(SearchableInterface $searchable, ElasticaToModelTransformerInterface $transformer)
     {
@@ -54,9 +52,11 @@ class TransformedFinder implements PaginatedFinderInterface
     }
 
     /**
-     * @param $query
+     * @param mixed $query
+     * @phpstan-param TQuery $query
+     * @phpstan-param TOptions $options
      *
-     * @return array
+     * @return list<HybridResult>
      */
     public function findHybrid($query, ?int $limit = null, array $options = [])
     {
@@ -66,7 +66,11 @@ class TransformedFinder implements PaginatedFinderInterface
     }
 
     /**
-     * @param $query
+     * @param mixed $query
+     * @phpstan-param TQuery $query
+     * @phpstan-param TOptions $options
+     *
+     * @return Result[]
      */
     public function findRaw($query, ?int $limit = null, array $options = []): array
     {
@@ -87,8 +91,10 @@ class TransformedFinder implements PaginatedFinderInterface
      * Searches for query hybrid results and returns them wrapped in a paginator.
      *
      * @param mixed $query Can be a string, an array or an \Elastica\Query object
+     * @phpstan-param TQuery $query
+     * @phpstan-param TOptions $options
      *
-     * @return Pagerfanta paginated hybrid results
+     * @return Pagerfanta<HybridResult> paginated hybrid results
      */
     public function findHybridPaginated($query, array $options = [])
     {
@@ -142,9 +148,11 @@ class TransformedFinder implements PaginatedFinderInterface
     }
 
     /**
-     * @param $query
+     * @param mixed $query
+     * @phpstan-param TQuery $query
+     * @phpstan-param TOptions $options
      *
-     * @return array
+     * @return Result[]
      */
     protected function search($query, ?int $limit = null, array $options = [])
     {
@@ -152,8 +160,7 @@ class TransformedFinder implements PaginatedFinderInterface
         if (null !== $limit) {
             $queryObject->setSize($limit);
         }
-        $results = $this->searchable->search($queryObject, $options)->getResults();
 
-        return $results;
+        return $this->searchable->search($queryObject, $options)->getResults();
     }
 }

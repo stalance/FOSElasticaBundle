@@ -11,6 +11,7 @@
 
 namespace FOS\ElasticaBundle\Index;
 
+use FOS\ElasticaBundle\Configuration\IndexConfig;
 use FOS\ElasticaBundle\Configuration\ManagerInterface;
 use FOS\ElasticaBundle\Event\PostIndexResetEvent;
 use FOS\ElasticaBundle\Event\PreIndexResetEvent;
@@ -21,30 +22,11 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  */
 class Resetter implements ResetterInterface
 {
-    /**
-     * @var AliasProcessor
-     */
-    private $aliasProcessor;
-
-    /***
-     * @var ManagerInterface
-     */
-    private $configManager;
-
-    /**
-     * @var EventDispatcherInterface
-     */
-    private $dispatcher;
-
-    /**
-     * @var IndexManager
-     */
-    private $indexManager;
-
-    /**
-     * @var MappingBuilder
-     */
-    private $mappingBuilder;
+    private AliasProcessor $aliasProcessor;
+    private ManagerInterface $configManager;
+    private EventDispatcherInterface $dispatcher;
+    private IndexManager $indexManager;
+    private MappingBuilder $mappingBuilder;
 
     public function __construct(
         ManagerInterface $configManager,
@@ -63,7 +45,7 @@ class Resetter implements ResetterInterface
     /**
      * Deletes and recreates all indexes.
      */
-    public function resetAllIndexes(bool $populating = false, bool $force = false)
+    public function resetAllIndexes(bool $populating = false, bool $force = false): void
     {
         foreach ($this->configManager->getIndexNames() as $name) {
             $this->resetIndex($name, $populating, $force);
@@ -76,9 +58,12 @@ class Resetter implements ResetterInterface
      *
      * @throws \InvalidArgumentException if no index exists for the given name
      */
-    public function resetIndex(string $indexName, bool $populating = false, bool $force = false)
+    public function resetIndex(string $indexName, bool $populating = false, bool $force = false): void
     {
         $indexConfig = $this->configManager->getIndexConfiguration($indexName);
+        if (!$indexConfig instanceof IndexConfig) {
+            throw new \RuntimeException(\sprintf('Incorrect index configuration object. Expecting IndexConfig, but got: %s ', \get_class($indexConfig)));
+        }
         $index = $this->indexManager->getIndex($indexName);
 
         if ($indexConfig->isUseAlias()) {
@@ -90,7 +75,7 @@ class Resetter implements ResetterInterface
         $mapping = $this->mappingBuilder->buildIndexMapping($indexConfig);
         $index->create($mapping, ['recreate' => true]);
 
-        if (!$populating and $indexConfig->isUseAlias()) {
+        if (!$populating && $indexConfig->isUseAlias()) {
             $this->aliasProcessor->switchIndexAlias($indexConfig, $index, $force);
         }
 
@@ -102,9 +87,12 @@ class Resetter implements ResetterInterface
      *
      * @throws \FOS\ElasticaBundle\Exception\AliasIsIndexException
      */
-    public function switchIndexAlias(string $indexName, bool $delete = true)
+    public function switchIndexAlias(string $indexName, bool $delete = true): void
     {
         $indexConfig = $this->configManager->getIndexConfiguration($indexName);
+        if (!$indexConfig instanceof IndexConfig) {
+            throw new \RuntimeException(\sprintf('Incorrect index configuration object. Expecting IndexConfig, but got: %s ', \get_class($indexConfig)));
+        }
 
         if ($indexConfig->isUseAlias()) {
             $index = $this->indexManager->getIndex($indexName);

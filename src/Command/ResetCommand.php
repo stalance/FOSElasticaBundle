@@ -23,10 +23,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ResetCommand extends Command
 {
-    protected static $defaultName = 'fos:elastica:reset';
-
-    private $indexManager;
-    private $resetter;
+    private IndexManager $indexManager;
+    private Resetter $resetter;
 
     public function __construct(
         IndexManager $indexManager,
@@ -38,6 +36,9 @@ class ResetCommand extends Command
         $this->resetter = $resetter;
     }
 
+    /**
+     * @return void
+     */
     protected function configure()
     {
         $this
@@ -48,7 +49,7 @@ class ResetCommand extends Command
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $indexes = (null !== $index = $input->getOption('index')) ? [$index] : \array_keys($this->indexManager->getAllIndexes());
         $force = (bool) $input->getOption('force');
